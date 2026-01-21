@@ -4,7 +4,7 @@ import com.hieuwu.groceriesstore.data.database.dao.LineItemDao
 import com.hieuwu.groceriesstore.data.database.dao.ProductDao
 import com.hieuwu.groceriesstore.data.database.entities.Product
 import com.hieuwu.groceriesstore.data.database.entities.asDomainModel
-import com.hieuwu.groceriesstore.data.network.RemoteTable
+import com.hieuwu.groceriesstore.data.network.Api
 import com.hieuwu.groceriesstore.data.network.dto.ProductDto
 import com.hieuwu.groceriesstore.data.repository.ProductRepository
 import com.hieuwu.groceriesstore.domain.models.ProductModel
@@ -14,11 +14,10 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import timber.log.Timber
 
-
-class ProductRepositoryImpl (
+class ProductRepositoryImpl(
     private val productDao: ProductDao,
     private val lineItemDao: LineItemDao,
-    private val supabasePostgrest: Postgrest
+    private val supabasePostgrest: Postgrest // Tetap dibiarkan agar tidak merusak Dependency Injection
 ) : ProductRepository {
 
     override val products: Flow<List<ProductModel>> =
@@ -28,12 +27,19 @@ class ProductRepositoryImpl (
 
     override suspend fun refreshDatabase() {
         try {
-            val result = supabasePostgrest[RemoteTable.Product.tableName]
-                .select().decodeList<ProductDto>()
+            // --- KODE LAMA (SUPABASE) SAYA MATIKAN ---
+            // val result = supabasePostgrest[RemoteTable.Product.tableName]
+            //     .select().decodeList<ProductDto>()
+
+            // --- KODE BARU (LARAVEL VIA NGROK) ---
+            // Ini akan mengambil data dari: https://regainable-mikel-overhugely.ngrok-free.dev/api/products
+            val result = Api.retrofitService.getProducts()
+
             val products = result.map { it.asEntity() }
             productDao.insertAll(products)
+
         } catch (e: Exception) {
-            Timber.e(e.message)
+            Timber.e("Error fetching data from Laravel: ${e.message}")
         }
     }
 
@@ -88,5 +94,4 @@ class ProductRepositoryImpl (
         price = price,
         category = category,
     )
-
 }

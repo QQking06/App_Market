@@ -1,79 +1,96 @@
 plugins {
-    alias libs.plugins.kotlin.android
-    alias libs.plugins.kotlin.kapt
-    alias libs.plugins.android.application
-    alias libs.plugins.ktlint.gradle
-    alias libs.plugins.gms
-    alias libs.plugins.navigation.safeargs
-    alias libs.plugins.compose.compiler
+        alias libs.plugins.kotlin.android
+        alias libs.plugins.kotlin.kapt
+        alias libs.plugins.android.application
+        alias libs.plugins.ktlint.gradle
+        alias libs.plugins.gms
+        alias libs.plugins.navigation.safeargs
+        alias libs.plugins.compose.compiler
+        id "org.jetbrains.kotlin.plugin.serialization" version "1.7.0"
+    } // <--- Make sure the plugins block is closed here
 
-    id "org.jetbrains.kotlin.plugin.serialization" version "1.7.0"
-}
-
-android {
-    compileSdk 35
-    defaultConfig {
-        applicationId "com.hieuwu.groceriesstore"
-        minSdkVersion 29
-        targetSdkVersion 35
-        versionCode 5
-        versionName "1.0"
-
-        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
-        Properties properties = new Properties()
-        properties.load(project.rootProject.file("local.properties").newDataInputStream())
-        buildConfigField("String", "API_KEY", "\"${properties.getProperty("API_KEY")}\"")
-        buildConfigField("String", "SECRET", "\"${properties.getProperty("SECRET")}\"")
-        buildConfigField("String", "SUPABASE_URL", "\"${properties.getProperty("SUPABASE_URL")}\"")
+// Now put your properties logic AFTER the plugins block
+    def localProperties = new Properties()
+    def localPropertiesFile = rootProject.file('local.properties')
+    if (localPropertiesFile.exists()) {
+        localProperties.load(new FileInputStream(localPropertiesFile))
     }
 
-    buildTypes {
-        release {
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+    android {
+        compileSdk 35
+        defaultConfig {
+            applicationId "com.hieuwu.groceriesstore"
+            minSdkVersion 29
+            targetSdkVersion 35
+            versionCode 5
+            versionName "1.0"
+
+            testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+
+            // --- PERBAIKAN DI SINI ---
+            // Menggunakan "Safe Call" (?.) dan nilai default (string kosong) agar tidak Crash jika key belum ada
+            def apiKey = localProperties['API_KEY'] ?: "TEMPORARY_KEY"
+            def secret = localProperties['SECRET'] ?: "TEMPORARY_SECRET"
+            def supabaseUrl = localProperties['SUPABASE_URL'] ?: "https://temporary.url"
+
+            buildConfigField("String", "API_KEY", "\"${apiKey}\"")
+            buildConfigField("String", "SECRET", "\"${secret}\"")
+            buildConfigField("String", "SUPABASE_URL", "\"${supabaseUrl}\"")
         }
 
-    }
-    flavorDimensions "environment"
-    productFlavors {
-        dev {
-            dimension "environment"
-            applicationIdSuffix ".dev"
-            versionNameSuffix "-dev"
-            Properties properties = new Properties()
-            properties.load(project.rootProject.file("local.properties").newDataInputStream())
-            buildConfigField("String", "API_KEY", "\"${properties.getProperty("API_KEY_DEBUG")}\"")
-            buildConfigField("String", "SECRET", "\"${properties.getProperty("SECRET_DEBUG")}\"")
-            buildConfigField("String", "SUPABASE_URL", "\"${properties.getProperty("SUPABASE_URL_DEBUG")}\"")
+        buildTypes {
+            release {
+                minifyEnabled false
+                proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            }
         }
-        prod {
-            dimension "environment"
-            applicationIdSuffix ".prod"
-            versionNameSuffix "-prod"
+
+        flavorDimensions "environment"
+        productFlavors {
+            dev {
+                dimension "environment"
+                applicationIdSuffix ".dev"
+                versionNameSuffix "-dev"
+
+                // --- PERBAIKAN DI SINI ---
+                // Menggunakan key khusus DEBUG dari local.properties
+                def apiKeyDebug = localProperties['API_KEY_DEBUG'] ?: "TEMPORARY_DEBUG_KEY"
+                def secretDebug = localProperties['SECRET_DEBUG'] ?: "TEMPORARY_DEBUG_SECRET"
+                def supabaseUrlDebug = localProperties['SUPABASE_URL_DEBUG'] ?: "https://temporary.debug.url"
+
+                // Menimpa value API_KEY dengan versi DEBUG
+                buildConfigField("String", "API_KEY", "\"${apiKeyDebug}\"")
+                buildConfigField("String", "SECRET", "\"${secretDebug}\"")
+                buildConfigField("String", "SUPABASE_URL", "\"${supabaseUrlDebug}\"")
+            }
+            prod {
+                dimension "environment"
+                applicationIdSuffix ".prod"
+                versionNameSuffix "-prod"
+            }
         }
-    }
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_17
-        targetCompatibility JavaVersion.VERSION_17
+
+        // ... (Sisa pengaturan compileOptions, kotlinOptions, buildFeatures biarkan saja)
+        compileOptions {
+            sourceCompatibility JavaVersion.VERSION_17
+            targetCompatibility JavaVersion.VERSION_17
+        }
+
+        kotlinOptions {
+            jvmTarget = JavaVersion.VERSION_17.toString()
+        }
+
+        buildFeatures {
+            compose true
+        }
+
+        composeOptions {
+            kotlinCompilerExtensionVersion "1.5.14"
+        }
+        namespace 'com.hieuwu.groceriesstore'
     }
 
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_17.toString()
-    }
-
-    buildFeatures {
-        compose true
-    }
-
-    composeOptions {
-        kotlinCompilerExtensionVersion "1.5.14"
-    }
-    namespace 'com.hieuwu.groceriesstore'
-}
-composeCompiler {
-    // Configure compose compiler options if required
-    enableStrongSkippingMode = true
-}
+// ... (Bagian dependencies di bawah biarkan saja)
 dependencies {
 
     implementation fileTree(dir: "libs", include: ["*.jar"])

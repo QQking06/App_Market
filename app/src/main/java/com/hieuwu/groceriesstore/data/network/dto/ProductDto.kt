@@ -1,22 +1,14 @@
 package com.hieuwu.groceriesstore.data.network.dto
 
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
+import com.squareup.moshi.Json
 
-@Serializable
+// Versi aman (tanpa @JsonClass) karena kita pakai KotlinJsonAdapterFactory
 data class ProductDto(
-    @SerialName("id")
-    val productId: String,
-    @SerialName("name")
-    val name: String,
-    @SerialName("description")
-    val description: String,
-    @SerialName("price")
-    val price: Double,
-    @SerialName("image")
-    val image: String,
-    @SerialName("category")
-    val category: String,
-    @SerialName("nutrition")
-    val nutrition: String,
+    @Json(name = "id") val productId: String,
+    @Json(name = "name") val name: String,
+    @Json(name = "description") val description: String,
+    @Json(name = "price") val price: Double,
+    @Json(name = "image") val image: String,
+    @Json(name = "category") val category: String,
+    @Json(name = "nutrition") val nutrition: String? = null
 )

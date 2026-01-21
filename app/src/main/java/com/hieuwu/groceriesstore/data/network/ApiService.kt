@@ -1,39 +1,42 @@
 package com.hieuwu.groceriesstore.data.network
 
-import com.hieuwu.groceriesstore.data.network.dto.RecipeListResponse
+import com.hieuwu.groceriesstore.data.network.dto.ProductDto
 import com.jakewharton.retrofit2.adapter.kotlin.coroutines.CoroutineCallAdapterFactory
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
-import kotlinx.coroutines.Deferred
+import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import retrofit2.http.GET
-import retrofit2.http.Headers
-import retrofit2.http.Query
 
-private const val BASE_URL = "https://tasty.p.rapidapi.com/"
+// 1. LINK NGROK (Wajib diakhiri "/api/")
+private const val BASE_URL = "https://regainable-mikel-overhugely.ngrok-free.dev/api/"
+
+// 2. KARTU PASS (Agar tidak dihadang halaman peringatan Ngrok)
+private val client = OkHttpClient.Builder()
+    .addInterceptor { chain ->
+        val request = chain.request().newBuilder()
+            .addHeader("ngrok-skip-browser-warning", "true") // Kunci rahasia
+            .build()
+        chain.proceed(request)
+    }
+    .build()
 
 private val moshi = Moshi.Builder()
     .add(KotlinJsonAdapterFactory())
     .build()
 
 private val retrofit = Retrofit.Builder()
+    .baseUrl(BASE_URL)
+    .client(client) // Pasang kartu pass di sini
     .addCallAdapterFactory(CoroutineCallAdapterFactory())
     .addConverterFactory(MoshiConverterFactory.create(moshi))
-    .baseUrl(BASE_URL)
     .build()
 
 interface RecipesApiService {
-    @Headers(
-        "x-rapidapi-host: tasty.p.rapidapi.com",
-        "x-rapidapi-key: 25623d5122mshdf7d5b25fc85d92p16d42bjsn846c1ccf5e93"
-    )
-    @GET("recipes/list")
-    fun getRecipesList(
-        @Query("from") from: Int = 20,
-        @Query("size") size: Int = 30,
-        @Query("tags") tags: String = "under_30_minutes"
-    ): Deferred<RecipeListResponse>
+    // Fungsi mengambil produk dari Laravel
+    @GET("products")
+    suspend fun getProducts(): List<ProductDto>
 }
 
 object Api {
